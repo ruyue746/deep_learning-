@@ -1,11 +1,13 @@
 import medmnist
-
-from medmnist import INFO, dataset
+from tqdm import tqdm
+from medmnist import INFO, Evaluator
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 import torchvision.transforms as transforms
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 ###We first work on a 2D dataset with size 28x28
 data_flag = 'chestmnist'  # 以 ChestMNIST 为例
@@ -19,7 +21,8 @@ info = INFO[data_flag]
 task = info['task']
 n_channels = info['n_channels']
 n_classes = len(info['label'])
-
+#这种动态获取类的方式在处理多种数据集时非常有用。例如，medmnist 模块可能包含多个不同的数据集类（如 ChestMNIST、PathMNIST 等），通过这种方式可以根据不同的数据集名称动态地加载对应的类，而不需要硬编码类名。
+#这段代码的作用是动态地从 medmnist 模块中获取一个类。通过从 info 字典中读取 'python_class' 键对应的值（即类的名称），然后使用 getattr 函数从模块中获取这个类，并将其赋值给变量 DataClass。
 DataClass = getattr(medmnist, info['python_class'])
 
 ##First, we read the MedMNIST data, preprocess them and encapsulate them into dataloader form.
@@ -39,6 +42,10 @@ pil_dataset = DataClass(split='train', download=download)
 train_loader = data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 train_loader_at_eval = data.DataLoader(dataset=train_dataset, batch_size=2*BATCH_SIZE, shuffle=False)
 test_loader = data.DataLoader(dataset=test_dataset, batch_size=2*BATCH_SIZE, shuffle=False)
+
+print(train_dataset)
+print("===================")
+print(test_dataset)
 
 # visualization
 train_dataset.montage(length=1)
@@ -135,7 +142,7 @@ for epoch in range(NUM_EPOCHS):
 
 # evaluation
 
-def test(split):
+def evaluate_model(split):
     model.eval()
     y_true = torch.tensor([])
     y_score = torch.tensor([])
@@ -167,7 +174,7 @@ def test(split):
 
 
 print('==> Evaluating ...')
-test('train')
-test('test')
+evaluate_model('train')
+evaluate_model('test')
 
 
